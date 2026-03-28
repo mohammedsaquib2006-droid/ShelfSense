@@ -905,7 +905,7 @@
     <div class="dash-card reveal">
       <div class="dash-card-header">Add Product</div>
       <div class="dash-card-body">
-        <form action="/add-product" method="post" class="form-grid">
+        <form action="https://shelfsense-f158.onrender.com/add-product" method="post" class="form-grid">
           <div class="form-group">
             <label for="item_name">Item Name</label>
             <input type="text" id="item_name" name="item_name" required class="form-input" placeholder="e.g. Milk" />
@@ -1102,6 +1102,7 @@
     document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
     /* ══════════════════ ShelfSense Functions ══════════════════ */
+    const API_BASE = 'https://shelfsense-f158.onrender.com';
 
     function openDonateModal(productName) {
       document.getElementById('donate_product_name').textContent = productName;
@@ -1139,7 +1140,7 @@
       list.innerHTML = '';
 
       try {
-        const res = await fetch('/find-ngos?city=' + encodeURIComponent(city));
+        const res = await fetch(API_BASE + '/find-ngos?city=' + encodeURIComponent(city));
         const data = await res.json();
 
         if (data.ngos && data.ngos.length > 0) {
@@ -1189,7 +1190,7 @@
       formData.append('file', fileInput.files[0]);
 
       try {
-        const res = await fetch('/scan-barcode', { method: 'POST', body: formData });
+        const res = await fetch(API_BASE + '/scan-barcode', { method: 'POST', body: formData });
         const data = await res.json();
 
         if (data.barcode && data.barcode !== 'not found') {
@@ -1226,7 +1227,7 @@
       status.textContent = '';
 
       try {
-        const res = await fetch('/lookup-barcode?code=' + encodeURIComponent(code));
+        const res = await fetch(API_BASE + '/lookup-barcode?code=' + encodeURIComponent(code));
         const data = await res.json();
 
         if (data.name) {
@@ -1268,7 +1269,7 @@
       formData.append('file', fileInput.files[0]);
 
       try {
-        const res = await fetch('/scan-date', { method: 'POST', body: formData });
+        const res = await fetch(API_BASE + '/scan-date', { method: 'POST', body: formData });
         const data = await res.json();
 
         if (data.date && data.date !== 'not found') {
