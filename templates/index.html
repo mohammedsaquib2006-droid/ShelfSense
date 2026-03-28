@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShelfSense — Smart Expiry Tracking</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #5b8c5a;
+      --primary-dark: #4a7249;
+      --accent: #c67b4e;
+      --accent-light: #d4956e;
+      --bg-dark: #faf6f0;
+      --bg-card: #ffffff;
+      --text: #2d2418;
+      --text-muted: #7a7068;
+      --danger: #c0543e;
+      --warning: #c49332;
+      --ngo-blue: #5a8fa8;
+      --scanner-green: #6aad6a;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(ellipse 90% 70% at 10% 15%, rgba(34,120,34,0.35), transparent 50%),
+        radial-gradient(ellipse 80% 60% at 90% 80%, rgba(180,40,35,0.30), transparent 50%),
+        radial-gradient(ellipse 50% 50% at 50% 45%, rgba(180,140,40,0.14), transparent 45%),
+        radial-gradient(ellipse 60% 40% at 70% 20%, rgba(50,130,60,0.18), transparent 45%),
+        radial-gradient(ellipse 55% 45% at 25% 75%, rgba(170,50,40,0.16), transparent 45%),
+        linear-gradient(155deg, #d4ecd4 0%, #e8e0d4 35%, #e8ddd4 65%, #f0d4d0 100%);
+      background-attachment: fixed;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .highlight {
+      background: linear-gradient(135deg, #2e5a2d, #8b4513);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ── Floating Particles ── */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .particle {
+      position: absolute; border-radius: 50%; opacity: 0;
+      animation: floatParticle linear infinite;
+    }
+    @keyframes floatParticle {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 0.35; }
+      90%  { opacity: 0.35; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
+
+    /* ── Navbar ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      backdrop-filter: blur(28px);
+      background: rgba(245, 240, 235, 0.65);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      padding: 1rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      animation: slideDown 0.8s ease-out;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .logo {
+      font-size: 1.5rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .logo span { font-weight: 400; opacity: 0.7; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: 0.9rem; font-weight: 500; transition: color 0.3s; position: relative;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0;
+      width: 0; height: 2px; background: var(--primary); transition: width 0.3s;
+    }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-links a:hover::after { width: 100%; }
+
+    /* ── Hero Section ── */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      position: relative; padding: 6rem 2rem 2rem;
+      flex-direction: column;
+    }
+    .hero-content {
+      text-align: center; z-index: 2; max-width: 800px;
+      width: 100%; margin: 0 auto;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .hero-badge {
+      display: inline-block; padding: 0.4rem 1.2rem;
+      border: 1px solid rgba(91, 140, 90, 0.3);
+      background: rgba(91, 140, 90, 0.08);
+      border-radius: 50px; font-size: 0.8rem; color: var(--primary-dark); margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900;
+      line-height: 1.1; margin-bottom: 1.5rem;
+      animation: fadeInUp 1s ease-out 0.3s both;
+    }
+    .hero p {
+      font-size: 1.15rem; color: var(--text-muted); max-width: 600px;
+      margin: 0 auto 2.5rem; line-height: 1.7;
+      animation: fadeInUp 1s ease-out 0.5s both;
+    }
+    @keyframes fadeInUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      padding: 1rem 2.5rem;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #fff; font-weight: 700; font-size: 1rem;
+      border: none; border-radius: 60px; cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+      animation: fadeInUp 1s ease-out 0.7s both; text-decoration: none;
+    }
+    .hero-cta:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 10px 30px rgba(91,140,90,0.25);
+    }
+
+    /* ── Soft Orbs Background ── */
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(130px);
+      animation: orbFloat 14s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 700px; height: 700px; background: #2e7d32; opacity: 0.18; top: -8%; left: -10%; }
+    .orb-2 { width: 600px; height: 600px; background: #c62828; opacity: 0.15; bottom: -8%; right: -10%; animation-delay: 2s; }
+    .orb-3 { width: 400px; height: 400px; background: #9e7a1e; opacity: 0.10; top: 40%; left: 40%; animation-delay: 4s; }
+    @keyframes orbFloat {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(40px, -30px) scale(1.15); }
+    }
+
+    /* ── Section Commons ── */
+    section { padding: 6rem 2rem; position: relative; z-index: 1; }
+    .section-title {
+      text-align: center; font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800; margin-bottom: 1rem;
+      color: #1a1209; width: 100%;
+    }
+    .section-subtitle {
+      text-align: center; color: var(--text-muted); font-size: 1.05rem;
+      max-width: 600px; margin: 0 auto 4rem; width: 100%;
+    }
+
+    /* ── Dashboard Section ── */
+    #dashboard {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    #dashboard > * { width: 100%; }
+
+    .dash-stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem; margin-bottom: 2.5rem; width: 100%;
+    }
+    .dash-stat-card {
+      border-radius: 16px; border: none;
+      padding: 1.5rem; display: flex; align-items: center; gap: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .dash-stat-card::before {
+      content: ''; position: absolute; inset: 0; opacity: 0.08; border-radius: 16px;
+    }
+    .dash-stat-card:hover {
+      transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    }
+    .dash-stat-card.card-total {
+      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+      border: 1px solid rgba(56,142,60,0.2);
+    }
+    .dash-stat-card.card-expiring {
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      border: 1px solid rgba(245,124,0,0.2);
+    }
+    .dash-stat-card.card-expired {
+      background: linear-gradient(135deg, #ffebee, #ffcdd2);
+      border: 1px solid rgba(211,47,47,0.2);
+    }
+    .dash-stat-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      font-size: 1.5rem;
+    }
+    .dash-stat-icon.blue { background: rgba(56,142,60,0.18); }
+    .dash-stat-icon.amber { background: rgba(245,124,0,0.18); }
+    .dash-stat-icon.red { background: rgba(211,47,47,0.18); }
+    .dash-stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+    .dash-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.8rem; font-weight: 800; line-height: 1;
+    }
+    .dash-stat-value.blue { color: #2e7d32; }
+    .dash-stat-value.amber { color: #e65100; }
+    .dash-stat-value.red { color: #c62828; }
+
+    /* ── Card Wrappers ── */
+    .dash-card {
+      background: #fff; border-radius: 20px; border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 2rem;
+      width: 100%;
+    }
+    .dash-card-header {
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.06);
+      font-size: 1.1rem; font-weight: 700;
+    }
+    .dash-card-body { padding: 1.5rem; }
+
+    /* ── Form Styles ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr 0.8fr 1.4fr 0.8fr;
+      gap: 1.5rem; align-items: start;
+    }
+    .form-group label {
+      display: block; font-size: 0.82rem; font-weight: 600;
+      color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-input {
+      width: 100%; padding: 0.65rem 0.9rem; border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 12px; font-size: 0.9rem; font-family: 'Inter', sans-serif;
+      background: #fdfcfa; transition: border-color 0.3s, box-shadow 0.3s;
+      color: var(--text);
+    }
+    .form-input:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(91,140,90,0.15);
+    }
+    .form-input::placeholder { color: #bbb; }
+
+    .btn-primary {
+      width: 100%; padding: 0.7rem 1.5rem;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #fff; font-weight: 700; font-size: 0.9rem;
+      border: none; border-radius: 12px; cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(91,140,90,0.3);
+    }
+    .btn-sm {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.35rem 0.8rem; border-radius: 8px; border: none;
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, transform 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-sm:hover { transform: translateY(-1px); }
+    .btn-green { background: rgba(91,140,90,0.12); color: var(--primary-dark); }
+    .btn-green:hover { background: rgba(91,140,90,0.22); }
+    .btn-purple { background: rgba(128,90,180,0.12); color: #6b4e9e; }
+    .btn-purple:hover { background: rgba(128,90,180,0.22); }
+    .btn-blue { background: rgba(90,143,168,0.12); color: var(--ngo-blue); }
+    .btn-blue:hover { background: rgba(90,143,168,0.22); }
+    .btn-indigo { background: rgba(99,102,241,0.12); color: #4f46e5; }
+    .btn-indigo:hover { background: rgba(99,102,241,0.22); }
+    .btn-danger-text {
+      background: none; border: none; color: var(--danger);
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-danger-text:hover { opacity: 0.7; text-decoration: underline; }
+
+    .form-group { min-width: 0; }
+    .scan-row { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .file-input {
+      flex: 1; min-width: 0; font-size: 0.7rem; color: var(--text-muted);
+      max-width: 100%; overflow: hidden;
+    }
+    .file-input::-webkit-file-upload-button {
+      padding: 0.25rem 0.6rem; border-radius: 6px; border: none;
+      font-size: 0.7rem; font-weight: 600; cursor: pointer;
+      background: rgba(91,140,90,0.1); color: var(--primary-dark);
+    }
+    .scan-status { margin-top: 0.25rem; font-size: 0.72rem; }
+    .scan-status.hidden { display: none; }
+
+    /* ── Scan Demo Animations ── */
+    .scan-demo {
+      margin-top: 0.6rem; height: 70px; border-radius: 10px; overflow: hidden;
+      position: relative; background: rgba(0,0,0,0.03); border: 1px dashed rgba(0,0,0,0.1);
+    }
+
+    /* Photo upload animation */
+    .photo-demo {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .photo-demo .pd-img {
+      width: 42px; height: 42px; border-radius: 8px; position: relative;
+      background: linear-gradient(135deg, #e8f5e9, #fff9c4);
+      border: 1.5px solid rgba(91,140,90,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; opacity: 0;
+      animation: photoSlideUp 4s ease-in-out infinite;
+    }
+    .photo-demo .pd-img:nth-child(1) { animation-delay: 0s; }
+    .photo-demo .pd-img:nth-child(2) { animation-delay: 1.3s; }
+    .photo-demo .pd-img:nth-child(3) { animation-delay: 2.6s; }
+
+    @keyframes photoSlideUp {
+      0%   { opacity: 0; transform: translateY(30px) scale(0.7); }
+      15%  { opacity: 1; transform: translateY(0) scale(1); }
+      35%  { opacity: 1; transform: translateY(0) scale(1); }
+      45%  { opacity: 1; transform: translateY(-5px) scale(0.95); }
+      55%  { opacity: 0; transform: translateY(-25px) scale(0.6); }
+      100% { opacity: 0; }
+    }
+    .photo-demo .pd-arrow {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      font-size: 0.9rem; color: var(--primary); opacity: 0;
+      animation: arrowPulse 2s ease-in-out infinite;
+    }
+    @keyframes arrowPulse {
+      0%, 100% { opacity: 0.3; transform: translateY(-50%) translateX(0); }
+      50%      { opacity: 0.8; transform: translateY(-50%) translateX(3px); }
+    }
+    .photo-demo .pd-label {
+      position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+      font-size: 0.55rem; font-weight: 700; color: var(--primary-dark);
+      opacity: 0.5; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .photo-demo .pd-scanline {
+      position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      animation: scanDown 2.5s ease-in-out infinite;
+    }
+    @keyframes scanDown {
+      0%   { top: 0; opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* Barcode scan animation */
+    .barcode-demo {
+      display: flex; align-items: center; justify-content: center;
+    }
+    .barcode-demo .bd-code {
+      display: flex; align-items: flex-end; gap: 1.5px; height: 40px;
+      position: relative;
+    }
+    .barcode-demo .bd-bar {
+      width: 2px; background: #1a1209; border-radius: 0.5px;
+      animation: barGrow 3s ease-out infinite;
+    }
+    .barcode-demo .bd-bar:nth-child(odd)  { width: 3px; }
+    .barcode-demo .bd-bar:nth-child(3n)   { width: 1.5px; }
+    .barcode-demo .bd-bar:nth-child(1)  { height: 32px; animation-delay: 0.0s; }
+    .barcode-demo .bd-bar:nth-child(2)  { height: 22px; animation-delay: 0.05s; }
+    .barcode-demo .bd-bar:nth-child(3)  { height: 30px; animation-delay: 0.1s; }
+    .barcode-demo .bd-bar:nth-child(4)  { height: 18px; animation-delay: 0.15s; }
+    .barcode-demo .bd-bar:nth-child(5)  { height: 28px; animation-delay: 0.2s; }
+    .barcode-demo .bd-bar:nth-child(6)  { height: 35px; animation-delay: 0.25s; }
+    .barcode-demo .bd-bar:nth-child(7)  { height: 20px; animation-delay: 0.3s; }
+    .barcode-demo .bd-bar:nth-child(8)  { height: 25px; animation-delay: 0.35s; }
+    .barcode-demo .bd-bar:nth-child(9)  { height: 33px; animation-delay: 0.4s; }
+    .barcode-demo .bd-bar:nth-child(10) { height: 15px; animation-delay: 0.45s; }
+    .barcode-demo .bd-bar:nth-child(11) { height: 30px; animation-delay: 0.5s; }
+    .barcode-demo .bd-bar:nth-child(12) { height: 22px; animation-delay: 0.55s; }
+    .barcode-demo .bd-bar:nth-child(13) { height: 36px; animation-delay: 0.6s; }
+    .barcode-demo .bd-bar:nth-child(14) { height: 19px; animation-delay: 0.65s; }
+    .barcode-demo .bd-bar:nth-child(15) { height: 28px; animation-delay: 0.7s; }
+    .barcode-demo .bd-bar:nth-child(16) { height: 24px; animation-delay: 0.75s; }
+
+    @keyframes barGrow {
+      0%   { transform: scaleY(0); opacity: 0; }
+      20%  { transform: scaleY(1); opacity: 1; }
+      80%  { transform: scaleY(1); opacity: 1; }
+      100% { transform: scaleY(0); opacity: 0; }
+    }
+
+    .barcode-demo .bd-laser {
+      position: absolute; top: -4px; left: -6px; width: calc(100% + 12px); height: 2px;
+      background: linear-gradient(90deg, transparent, #e53935, #ff1744, #e53935, transparent);
+      box-shadow: 0 0 8px rgba(229,57,53,0.5);
+      border-radius: 2px;
+      animation: laserSweep 1.8s ease-in-out infinite;
+    }
+    @keyframes laserSweep {
+      0%   { top: -4px; }
+      50%  { top: 42px; }
+      100% { top: -4px; }
+    }
+    .barcode-demo .bd-num {
+      position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+      font-size: 0.5rem; font-weight: 700; font-family: 'Courier New', monospace;
+      color: #1a1209; letter-spacing: 2px; opacity: 0;
+      animation: numFade 3s ease-in-out infinite;
+    }
+    @keyframes numFade {
+      0%, 20% { opacity: 0; }
+      40%, 80% { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+    .barcode-demo .bd-label {
+      position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+      font-size: 0.55rem; font-weight: 700; color: #c62828;
+      opacity: 0.5; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+
+    /* ── Table ── */
+    .product-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .product-table thead { background: rgba(0,0,0,0.02); }
+    .product-table th {
+      padding: 0.85rem 1.25rem; text-align: left; font-size: 0.7rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .product-table td {
+      padding: 0.85rem 1.25rem; border-bottom: 1px solid rgba(0,0,0,0.04);
+      vertical-align: middle;
+    }
+    .product-table tbody tr { transition: background 0.25s, box-shadow 0.25s; }
+    .product-table tbody tr:hover { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04); }
+    .row-expired {
+      background: linear-gradient(90deg, rgba(211,47,47,0.12), rgba(211,47,47,0.04));
+      border-left: 4px solid #d32f2f;
+    }
+    .row-expired:hover { background: linear-gradient(90deg, rgba(211,47,47,0.18), rgba(211,47,47,0.08)) !important; }
+    .row-red {
+      background: linear-gradient(90deg, rgba(229,57,53,0.10), rgba(229,57,53,0.03));
+      border-left: 4px solid #e53935;
+    }
+    .row-red:hover { background: linear-gradient(90deg, rgba(229,57,53,0.16), rgba(229,57,53,0.06)) !important; }
+    .row-yellow {
+      background: linear-gradient(90deg, rgba(245,124,0,0.10), rgba(245,124,0,0.03));
+      border-left: 4px solid #f57c00;
+    }
+    .row-yellow:hover { background: linear-gradient(90deg, rgba(245,124,0,0.16), rgba(245,124,0,0.06)) !important; }
+    .row-green {
+      background: linear-gradient(90deg, rgba(46,125,50,0.10), rgba(46,125,50,0.03));
+      border-left: 4px solid #2e7d32;
+    }
+    .row-green:hover { background: linear-gradient(90deg, rgba(46,125,50,0.16), rgba(46,125,50,0.06)) !important; }
+
+    .item-name { font-weight: 600; color: var(--text); }
+
+    .badge {
+      display: inline-flex; align-items: center; padding: 0.25rem 0.7rem;
+      border-radius: 50px; font-size: 0.7rem; font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-expired { background: #d32f2f; color: #fff; box-shadow: 0 2px 8px rgba(211,47,47,0.3); }
+    .badge-red { background: rgba(229,57,53,0.18); color: #c62828; border: 1px solid rgba(229,57,53,0.25); }
+    .badge-yellow { background: rgba(245,124,0,0.15); color: #e65100; border: 1px solid rgba(245,124,0,0.2); }
+    .badge-green { background: rgba(46,125,50,0.15); color: #1b5e20; border: 1px solid rgba(46,125,50,0.2); }
+    .badge-dark { background: #37474f; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .badge-urgent { background: linear-gradient(135deg, #d32f2f, #e53935); color: #fff; box-shadow: 0 2px 8px rgba(211,47,47,0.35); }
+    .badge-30 { background: rgba(230,81,0,0.14); color: #e65100; border: 1px solid rgba(230,81,0,0.2); }
+    .badge-10 { background: rgba(245,124,0,0.12); color: #ef6c00; border: 1px solid rgba(245,124,0,0.18); }
+
+    .days-text { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.82rem; }
+    .days-red { color: #c62828; }
+    .days-amber { color: #e65100; }
+    .days-green { color: #2e7d32; }
+
+    .actions-cell { display: flex; align-items: center; gap: 0.5rem; }
+
+    .empty-state {
+      padding: 4rem 2rem; text-align: center; color: var(--text-muted);
+    }
+    .empty-state svg { margin: 0 auto 1rem; opacity: 0.3; }
+    .empty-state p { font-size: 0.9rem; }
+    .empty-state .sub { font-size: 0.8rem; margin-top: 0.3rem; opacity: 0.7; }
+
+    /* ── Box Packing & Split Animation (18s cycle) ──
+       Phase 1 (0-38%):  Big box appears center, lid opens, food drops in
+       Phase 2 (38-44%): Lid closes, big box fades, two split boxes appear
+       Phase 3 (44-80%): Donate box → right, Discount box → left
+       Phase 4 (80-100%): Boxes fade out at edges, pause, restart
+    */
+    .donation-scene {
+      position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden;
+    }
+
+    /* ── Main packing box (center) ── */
+    .pack-station {
+      position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+      opacity: 0; animation: packShow 18s ease-in-out infinite;
+    }
+    @keyframes packShow {
+      0%        { opacity: 0; transform: translateX(-50%) scale(0.7); }
+      4%        { opacity: 1; transform: translateX(-50%) scale(1); }
+      40%       { opacity: 1; transform: translateX(-50%) scale(1); }
+      44%       { opacity: 0; transform: translateX(-50%) scale(0.95); }
+      100%      { opacity: 0; transform: translateX(-50%) scale(0.95); }
+    }
+
+    .big-box {
+      width: 130px; height: 90px; position: relative;
+    }
+    .big-box .bx-base {
+      width: 130px; height: 75px; position: absolute; bottom: 0;
+      background: linear-gradient(145deg, #b8885a, #9a7048);
+      border-radius: 5px 5px 8px 8px; border: 2px solid #7a562e;
+      box-shadow: 0 4px 15px rgba(100,70,30,0.25);
+    }
+    .big-box .bx-base::after {
+      content: ''; position: absolute; top: 0; left: 50%;
+      transform: translateX(-50%); width: 50px; height: 100%;
+      background: rgba(255,255,255,0.07); border-radius: 3px;
+    }
+    .big-box .bx-stripe {
+      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 2px; height: 75px; background: rgba(122,86,46,0.5);
+    }
+    .big-box .bx-lid {
+      width: 136px; height: 16px; position: absolute; bottom: 73px; left: -3px;
+      background: linear-gradient(145deg, #c99b66, #a07a4e);
+      border-radius: 4px 4px 0 0; border: 2px solid #7a562e;
+      transform-origin: bottom left;
+      animation: bigLidFlap 18s ease-in-out infinite;
+    }
+    @keyframes bigLidFlap {
+      0%, 4%    { transform: rotateX(0deg) translateY(-3px); }
+      8%        { transform: rotateX(-75deg) translateY(-14px); }
+      36%       { transform: rotateX(-75deg) translateY(-14px); }
+      42%       { transform: rotateX(0deg) translateY(-3px); }
+      100%      { transform: rotateX(0deg) translateY(-3px); }
+    }
+
+    /* Food items dropping into the big box */
+    .pack-food {
+      position: absolute; opacity: 0;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+    }
+    .pack-food.pf-1 { font-size: 2.2rem; animation: pfDrop 18s ease-in-out infinite; animation-delay: 1.0s; }
+    .pack-food.pf-2 { font-size: 2.0rem; animation: pfDrop 18s ease-in-out infinite; animation-delay: 2.0s; }
+    .pack-food.pf-3 { font-size: 2.1rem; animation: pfDrop 18s ease-in-out infinite; animation-delay: 3.0s; }
+    .pack-food.pf-4 { font-size: 1.9rem; animation: pfDrop 18s ease-in-out infinite; animation-delay: 4.0s; }
+    .pack-food.pf-5 { font-size: 2.0rem; animation: pfDrop 18s ease-in-out infinite; animation-delay: 5.0s; }
+    .pack-food.pf-6 { font-size: 2.1rem; animation: pfDrop 18s ease-in-out infinite; animation-delay: 5.8s; }
+
+    @keyframes pfDrop {
+      0%, 3%   { opacity: 0; transform: translate(0, -100px) scale(1.2) rotate(-10deg); }
+      5%       { opacity: 1; transform: translate(0, -80px) scale(1) rotate(0deg); }
+      9%       { opacity: 1; transform: translate(5px, -15px) scale(0.65) rotate(5deg); }
+      11%, 38% { opacity: 0.7; transform: translate(5px, 0px) scale(0.45) rotate(0deg); }
+      42%      { opacity: 0; transform: translate(5px, 0px) scale(0.3) rotate(0deg); }
+      100%     { opacity: 0; }
+    }
+
+    /* ── Split boxes (appear when big box vanishes) ── */
+    .split-box {
+      position: absolute; bottom: 10%; opacity: 0;
+    }
+    .split-box .sm-base {
+      width: 100px; height: 60px; position: absolute; bottom: 0;
+      border-radius: 4px 4px 6px 6px; border: 2px solid;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+    }
+    .split-box .sm-base::after {
+      content: ''; position: absolute; top: 0; left: 50%;
+      transform: translateX(-50%); width: 36px; height: 100%;
+      background: rgba(255,255,255,0.08); border-radius: 2px;
+    }
+    .split-box .sm-lid {
+      width: 106px; height: 13px; position: absolute; bottom: 58px; left: -3px;
+      border-radius: 3px 3px 0 0; border: 2px solid;
+    }
+    .split-box .sm-wheels {
+      position: absolute; bottom: -10px; width: 100px;
+      display: flex; justify-content: space-between; padding: 0 12px;
+    }
+    .split-box .sm-wheel {
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #555; border: 2px solid #444;
+    }
+    .split-box .sm-label {
+      position: absolute; bottom: 72px; left: 50%; transform: translateX(-50%);
+      font-size: 0.7rem; font-weight: 800; padding: 2px 10px; border-radius: 5px;
+      white-space: nowrap; letter-spacing: 0.8px; text-transform: uppercase;
+    }
+    .split-box .sm-icon {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      font-size: 1.6rem;
+    }
+
+    /* Donate box (green) → goes RIGHT */
+    .split-donate .sm-base {
+      background: linear-gradient(145deg, #4caf50, #388e3c); border-color: #2e7d32;
+    }
+    .split-donate .sm-lid {
+      background: linear-gradient(145deg, #66bb6a, #43a047); border-color: #2e7d32;
+    }
+    .split-donate .sm-label {
+      background: rgba(46,125,50,0.9); color: #fff;
+    }
+    .split-donate {
+      left: 50%; transform: translateX(-50%);
+      animation: splitRight 18s ease-in-out infinite;
+    }
+    .split-donate .sm-wheel {
+      animation: wheelRoll 18s linear infinite;
+    }
+    @keyframes splitRight {
+      0%, 42%  { left: 50%; transform: translateX(-50%); opacity: 0; }
+      46%      { left: 50%; transform: translateX(-50%); opacity: 1; }
+      48%      { left: 52%; transform: translateX(-50%); opacity: 1; }
+      76%      { left: 92%; transform: translateX(-50%); opacity: 1; }
+      84%      { left: 105%; transform: translateX(-50%); opacity: 0; }
+      100%     { left: 105%; transform: translateX(-50%); opacity: 0; }
+    }
+    @keyframes wheelRoll {
+      0%, 46%  { transform: rotate(0deg); }
+      84%      { transform: rotate(1080deg); }
+      100%     { transform: rotate(1080deg); }
+    }
+
+    /* Discount box (orange/amber) → goes LEFT */
+    .split-discount .sm-base {
+      background: linear-gradient(145deg, #ff9800, #e65100); border-color: #bf360c;
+    }
+    .split-discount .sm-lid {
+      background: linear-gradient(145deg, #ffa726, #fb8c00); border-color: #bf360c;
+    }
+    .split-discount .sm-label {
+      background: rgba(230,81,0,0.9); color: #fff;
+    }
+    .split-discount {
+      left: 50%; transform: translateX(-50%);
+      animation: splitLeft 18s ease-in-out infinite;
+    }
+    .split-discount .sm-wheel {
+      animation: wheelRollLeft 18s linear infinite;
+    }
+    @keyframes splitLeft {
+      0%, 42%  { left: 50%; transform: translateX(-50%); opacity: 0; }
+      46%      { left: 50%; transform: translateX(-50%); opacity: 1; }
+      48%      { left: 48%; transform: translateX(-50%); opacity: 1; }
+      76%      { left: 5%;  transform: translateX(-50%); opacity: 1; }
+      84%      { left: -10%; transform: translateX(-50%); opacity: 0; }
+      100%     { left: -10%; transform: translateX(-50%); opacity: 0; }
+    }
+    @keyframes wheelRollLeft {
+      0%, 46%  { transform: rotate(0deg); }
+      84%      { transform: rotate(-1080deg); }
+      100%     { transform: rotate(-1080deg); }
+    }
+
+    /* Motion trail lines for split boxes */
+    .split-box .sm-motion {
+      position: absolute; top: 50%; display: flex;
+      flex-direction: column; gap: 5px; opacity: 0;
+    }
+    .sm-motion-line {
+      height: 2px; background: rgba(0,0,0,0.12); border-radius: 2px;
+    }
+    .sm-motion-line:nth-child(1) { width: 16px; }
+    .sm-motion-line:nth-child(2) { width: 10px; margin-left: 3px; }
+    .sm-motion-line:nth-child(3) { width: 13px; margin-left: 1px; }
+
+    .split-donate .sm-motion {
+      left: -22px; animation: trailShowR 18s ease-in-out infinite;
+    }
+    .split-discount .sm-motion {
+      right: -22px; animation: trailShowL 18s ease-in-out infinite;
+    }
+    @keyframes trailShowR {
+      0%, 48% { opacity: 0; }
+      52%, 74% { opacity: 0.5; }
+      80% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes trailShowL {
+      0%, 48% { opacity: 0; }
+      52%, 74% { opacity: 0.5; }
+      80% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+
+    /* Split flash effect */
+    .split-flash {
+      position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%);
+      width: 20px; height: 20px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.9), transparent 70%);
+      opacity: 0; animation: flashPop 18s ease-out infinite;
+    }
+    @keyframes flashPop {
+      0%, 42%  { opacity: 0; transform: translateX(-50%) scale(0.5); }
+      44%      { opacity: 1; transform: translateX(-50%) scale(4); }
+      48%      { opacity: 0; transform: translateX(-50%) scale(6); }
+      100%     { opacity: 0; }
+    }
+
+    /* Dashed road */
+    .donation-road {
+      position: absolute; bottom: 8%; left: 0; width: 100%; height: 2px;
+      background: repeating-linear-gradient(90deg, rgba(120,100,80,0.2) 0px, rgba(120,100,80,0.2) 14px, transparent 14px, transparent 24px);
+    }
+
+    /* ── Donate Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
+    .modal-content {
+      position: relative; background: #fff; border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+      width: 100%; max-width: 440px; margin: 1rem; overflow: hidden;
+      animation: modalIn 0.3s ease-out;
+    }
+    @keyframes modalIn {
+      from { transform: scale(0.9) translateY(20px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .modal-header {
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.06);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 1.1rem; font-weight: 700; }
+    .modal-header h3 span { color: var(--primary); }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); transition: color 0.2s; font-size: 1.2rem;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 1.5rem; }
+    .modal-body label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .modal-search-row { display: flex; gap: 0.5rem; }
+    .modal-search-row input { flex: 1; }
+    .btn-modal {
+      padding: 0.65rem 1.2rem; border: none; border-radius: 12px;
+      font-weight: 700; font-size: 0.85rem; cursor: pointer;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #fff; transition: transform 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-modal:hover { transform: translateY(-1px); }
+    .ngo-result-card {
+      display: block; padding: 0.85rem 1rem; border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px; margin-bottom: 0.5rem; text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .ngo-result-card:hover { border-color: var(--primary); background: rgba(91,140,90,0.04); }
+    .ngo-result-card .name { font-size: 0.9rem; font-weight: 600; color: var(--primary-dark); }
+    .ngo-result-card .url { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Footer ── */
+    footer {
+      padding: 3rem 2rem; border-top: 1px solid rgba(0,0,0,0.06);
+      text-align: center; color: var(--text-muted); font-size: 0.85rem;
+      position: relative; z-index: 1;
+    }
+    .footer-brand {
+      font-size: 1.2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Scroll Reveal ── */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease-out, transform 0.7s ease-out; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .form-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .form-grid { grid-template-columns: 1fr; }
+      .dash-stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Particles -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Box Packing & Split Animation -->
+  <div class="donation-scene">
+
+    <!-- Phase 1: Big packing box in center with food dropping in -->
+    <div class="pack-station">
+      <span class="pack-food pf-1" style="left:15px;">&#127867;</span>
+      <span class="pack-food pf-2" style="left:55px;">&#129371;</span>
+      <span class="pack-food pf-3" style="left:85px;">&#127835;</span>
+      <span class="pack-food pf-4" style="left:30px;">&#127822;</span>
+      <span class="pack-food pf-5" style="left:70px;">&#127836;</span>
+      <span class="pack-food pf-6" style="left:50px;">&#129472;</span>
+      <div class="big-box">
+        <div class="bx-lid"></div>
+        <div class="bx-base"><div class="bx-stripe"></div></div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Split flash -->
+    <div class="split-flash"></div>
+
+    <!-- Phase 3: Donate box → RIGHT (green) -->
+    <div class="split-box split-donate">
+      <div class="sm-lid"></div>
+      <div class="sm-base"></div>
+      <div class="sm-icon">&#10084;&#65039;</div>
+      <div class="sm-wheels">
+        <div class="sm-wheel"></div>
+        <div class="sm-wheel"></div>
+      </div>
+      <div class="sm-label">Donate</div>
+      <div class="sm-motion">
+        <div class="sm-motion-line"></div>
+        <div class="sm-motion-line"></div>
+        <div class="sm-motion-line"></div>
+      </div>
+    </div>
+
+    <!-- Phase 3: Discount box → LEFT (orange) -->
+    <div class="split-box split-discount">
+      <div class="sm-lid"></div>
+      <div class="sm-base"></div>
+      <div class="sm-icon">&#128176;</div>
+      <div class="sm-wheels">
+        <div class="sm-wheel"></div>
+        <div class="sm-wheel"></div>
+      </div>
+      <div class="sm-label">Discount</div>
+      <div class="sm-motion">
+        <div class="sm-motion-line"></div>
+        <div class="sm-motion-line"></div>
+        <div class="sm-motion-line"></div>
+      </div>
+    </div>
+
+    <div class="donation-road"></div>
+  </div>
+
+  <!-- Navbar -->
+  <nav>
+    <div class="logo">ShelfSense<span>.io</span></div>
+    <ul class="nav-links">
+      <li><a href="#dashboard">Dashboard</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">&#9889; Reducing Waste; Helping Businesses, Customers and Most Importantly the Underprivileged</div>
+      <h1>Scan. <span class="highlight">Discount.</span> Donate.</h1>
+      <p>Track expiry dates, auto-suggest smart discounts on near-expiry products, and connect surplus food with communities in need. Sell more, waste less, feed others.</p>
+      <a href="#dashboard" class="hero-cta">&#9655; Start Tracking</a>
+    </div>
+  </section>
+
+  <!-- ══════════════════ DASHBOARD ══════════════════ -->
+  <section id="dashboard">
+    <h2 class="section-title reveal">Your <span class="highlight">Dashboard</span></h2>
+    <p class="section-subtitle reveal">Track products, monitor expiry dates, and take action before it's too late.</p>
+
+    <!-- Stat Cards -->
+    <div class="dash-stats reveal">
+      <div class="dash-stat-card card-total">
+        <div class="dash-stat-icon blue">&#128230;</div>
+        <div>
+          <div class="dash-stat-label">Total Products</div>
+          <div class="dash-stat-value blue">{{ stats.total }}</div>
+        </div>
+      </div>
+      <div class="dash-stat-card card-expiring">
+        <div class="dash-stat-icon amber">&#9888;&#65039;</div>
+        <div>
+          <div class="dash-stat-label">Expiring Soon</div>
+          <div class="dash-stat-value amber">{{ stats.expiring_soon }}</div>
+        </div>
+      </div>
+      <div class="dash-stat-card card-expired">
+        <div class="dash-stat-icon red">&#128683;</div>
+        <div>
+          <div class="dash-stat-label">Expired</div>
+          <div class="dash-stat-value red">{{ stats.expired }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Product Form -->
+    <div class="dash-card reveal">
+      <div class="dash-card-header">Add Product</div>
+      <div class="dash-card-body">
+        <form action="/add-product" method="post" class="form-grid">
+          <div class="form-group">
+            <label for="item_name">Item Name</label>
+            <input type="text" id="item_name" name="item_name" required class="form-input" placeholder="e.g. Milk" />
+          </div>
+          <div class="form-group">
+            <label for="expiry_date">Expiry Date</label>
+            <input type="date" id="expiry_date" name="expiry_date" required class="form-input" />
+            <div class="scan-row">
+              <input type="file" id="scan_photo" accept="image/*" class="file-input" />
+              <button type="button" id="scan_btn" onclick="scanPhoto()" class="btn-sm btn-green">Scan Photo</button>
+            </div>
+            <div class="scan-demo photo-demo">
+              <div class="pd-img">&#129472;</div>
+              <div class="pd-img">&#127867;</div>
+              <div class="pd-img">&#127836;</div>
+              <div class="pd-scanline"></div>
+              <div class="pd-arrow">&#10145;&#65039;</div>
+              <div class="pd-label">uploading &amp; scanning</div>
+            </div>
+            <p id="scan_status" class="scan-status hidden"></p>
+          </div>
+          <div class="form-group">
+            <label for="quantity">Quantity</label>
+            <input type="number" id="quantity" name="quantity" min="1" required class="form-input" placeholder="1" />
+          </div>
+          <div class="form-group">
+            <label for="barcode">Barcode <span style="opacity:0.5">(optional)</span></label>
+            <input type="text" id="barcode" name="barcode" class="form-input" placeholder="e.g. 012345678905" />
+            <div class="scan-row">
+              <input type="file" id="barcode_photo" accept="image/*" class="file-input" />
+              <button type="button" id="scan_barcode_btn" onclick="scanBarcodePhoto()" class="btn-sm btn-purple">Scan Barcode</button>
+            </div>
+            <div class="scan-demo barcode-demo">
+              <div class="bd-code">
+                <div class="bd-bar"></div><div class="bd-bar"></div><div class="bd-bar"></div>
+                <div class="bd-bar"></div><div class="bd-bar"></div><div class="bd-bar"></div>
+                <div class="bd-bar"></div><div class="bd-bar"></div><div class="bd-bar"></div>
+                <div class="bd-bar"></div><div class="bd-bar"></div><div class="bd-bar"></div>
+                <div class="bd-bar"></div><div class="bd-bar"></div><div class="bd-bar"></div>
+                <div class="bd-bar"></div>
+                <div class="bd-laser"></div>
+                <div class="bd-num">0 12345 67890 5</div>
+              </div>
+              <div class="bd-label">scanning barcode</div>
+            </div>
+            <div class="scan-row" style="margin-top:0.25rem;">
+              <button type="button" id="lookup_btn" onclick="lookupBarcode()" class="btn-sm btn-blue">Lookup Product</button>
+              <p id="lookup_status" class="scan-status"></p>
+            </div>
+            <p id="barcode_scan_status" class="scan-status hidden"></p>
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end;align-self:end;">
+            <button type="submit" class="btn-primary">Add Product</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="dash-card reveal">
+      <div class="dash-card-header">Product Inventory</div>
+      {% if products %}
+      <div style="overflow-x:auto;">
+        <table class="product-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Expiry Date</th>
+              <th>Days Left</th>
+              <th>Quantity</th>
+              <th>Status</th>
+              <th>Suggested Discount</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in products %}
+            <tr class="{% if product.status == 'expired' %}row-expired{% elif product.status == 'red' %}row-red{% elif product.status == 'yellow' %}row-yellow{% else %}row-green{% endif %}">
+              <td class="item-name">{{ product.item_name }}</td>
+              <td>{{ product.expiry_date }}</td>
+              <td>
+                {% if product.days_left < 0 %}
+                  <span class="days-text days-red">{{ product.days_left }} days</span>
+                {% elif product.days_left == 0 %}
+                  <span class="days-text days-red">Today</span>
+                {% else %}
+                  <span class="days-text {% if product.status == 'red' %}days-red{% elif product.status == 'yellow' %}days-amber{% else %}days-green{% endif %}">{{ product.days_left }} days</span>
+                {% endif %}
+              </td>
+              <td>{{ product.quantity }}</td>
+              <td>
+                {% if product.status == 'expired' %}
+                  <span class="badge badge-expired">Expired</span>
+                {% elif product.status == 'red' %}
+                  <span class="badge badge-red">Critical</span>
+                {% elif product.status == 'yellow' %}
+                  <span class="badge badge-yellow">Expiring Soon</span>
+                {% else %}
+                  <span class="badge badge-green">Fresh</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if product.discount == 'Do not sell - Expired' %}
+                  <span class="badge badge-dark">{{ product.discount }}</span>
+                {% elif product.discount == '50% off - urgent' %}
+                  <span class="badge badge-urgent">{{ product.discount }}</span>
+                {% elif product.discount == '30% off' %}
+                  <span class="badge badge-30">{{ product.discount }}</span>
+                {% elif product.discount == '10% off' %}
+                  <span class="badge badge-10">{{ product.discount }}</span>
+                {% else %}
+                  <span class="badge badge-green">{{ product.discount }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="actions-cell">
+                  {% if product.status == 'yellow' %}
+                  <button onclick="openDonateModal('{{ product.item_name }}')" class="btn-sm btn-indigo">Donate</button>
+                  {% endif %}
+                  <button class="btn-danger-text">Remove</button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        <p>No products tracked yet.</p>
+        <p class="sub">Add products above to start monitoring their shelf life.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ══════════════════ DONATE MODAL ══════════════════ -->
+  <div id="donate_modal" class="modal-overlay">
+    <div class="modal-backdrop" onclick="closeDonateModal()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Donate: <span id="donate_product_name"></span></h3>
+        <button onclick="closeDonateModal()" class="modal-close">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <label for="donate_city">Enter your city</label>
+        <div class="modal-search-row">
+          <input type="text" id="donate_city" placeholder="e.g. Delhi" class="form-input" />
+          <button onclick="searchNGOs()" id="ngo_search_btn" class="btn-modal">Search</button>
+        </div>
+        <div id="ngo_results" style="margin-top:1rem;display:none;">
+          <p style="font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:0.5rem;">Nearby food banks &amp; NGOs:</p>
+          <div id="ngo_list"></div>
+        </div>
+        <p id="ngo_status" style="margin-top:0.75rem;font-size:0.78rem;display:none;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-brand">ShelfSense.io</div>
+    <p>Smart expiry tracking for your inventory &mdash; never waste a product again.</p>
+    <p style="margin-top: 0.5rem; font-size: 0.75rem;">&copy; 2026 ShelfSense. All rights reserved.</p>
+  </footer>
+
+  <script>
+    /* ── Particles ── */
+    (function initParticles() {
+      const container = document.getElementById('particles');
+      const colors = ['#388e3c', '#43a047', '#c62828', '#d32f2f', '#e65100', '#8bc34a'];
+      for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = Math.random() * 4 + 2;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+        p.style.animationDelay = (Math.random() * 10) + 's';
+        container.appendChild(p);
+      }
+    })();
+
+    /* ── Scroll Reveal ── */
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    /* ══════════════════ ShelfSense Functions ══════════════════ */
+
+    function openDonateModal(productName) {
+      document.getElementById('donate_product_name').textContent = productName;
+      document.getElementById('donate_city').value = '';
+      document.getElementById('ngo_results').style.display = 'none';
+      document.getElementById('ngo_list').innerHTML = '';
+      document.getElementById('ngo_status').style.display = 'none';
+      document.getElementById('donate_modal').classList.add('active');
+    }
+
+    function closeDonateModal() {
+      document.getElementById('donate_modal').classList.remove('active');
+    }
+
+    async function searchNGOs() {
+      const city = document.getElementById('donate_city').value.trim();
+      const btn = document.getElementById('ngo_search_btn');
+      const statusEl = document.getElementById('ngo_status');
+      const resultsDiv = document.getElementById('ngo_results');
+      const list = document.getElementById('ngo_list');
+
+      if (!city) {
+        statusEl.textContent = 'Please enter a city name.';
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--warning)';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Searching...';
+      statusEl.textContent = 'Finding NGOs near ' + city + '...';
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--text-muted)';
+      resultsDiv.style.display = 'none';
+      list.innerHTML = '';
+
+      try {
+        const res = await fetch('/find-ngos?city=' + encodeURIComponent(city));
+        const data = await res.json();
+
+        if (data.ngos && data.ngos.length > 0) {
+          data.ngos.forEach(ngo => {
+            const card = document.createElement('a');
+            card.href = ngo.url;
+            card.target = '_blank';
+            card.rel = 'noopener';
+            card.className = 'ngo-result-card';
+            card.innerHTML = `<div class="name">${ngo.name}</div><div class="url">${ngo.url}</div>`;
+            list.appendChild(card);
+          });
+          resultsDiv.style.display = 'block';
+          statusEl.style.display = 'none';
+        } else {
+          statusEl.textContent = 'No NGOs found for this city. Try a different city.';
+          statusEl.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Search failed. Please try again.';
+        statusEl.style.color = 'var(--danger)';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Search';
+      }
+    }
+
+    async function scanBarcodePhoto() {
+      const fileInput = document.getElementById('barcode_photo');
+      const status = document.getElementById('barcode_scan_status');
+      const btn = document.getElementById('scan_barcode_btn');
+
+      if (!fileInput.files.length) {
+        status.textContent = 'Please select a barcode image first.';
+        status.style.color = 'var(--warning)';
+        status.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Scanning...';
+      status.textContent = 'Reading barcode from image...';
+      status.style.color = 'var(--text-muted)';
+      status.classList.remove('hidden');
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/scan-barcode', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.barcode && data.barcode !== 'not found') {
+          document.getElementById('barcode').value = data.barcode;
+          status.textContent = 'Barcode detected: ' + data.barcode;
+          status.style.color = 'var(--primary)';
+          lookupBarcode();
+        } else {
+          status.textContent = data.error || 'Could not read barcode, please enter manually.';
+          status.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        status.textContent = 'Scan failed. Please try again or enter manually.';
+        status.style.color = 'var(--danger)';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Scan Barcode';
+      }
+    }
+
+    async function lookupBarcode() {
+      const code = document.getElementById('barcode').value.trim();
+      const status = document.getElementById('lookup_status');
+      const btn = document.getElementById('lookup_btn');
+
+      if (!code) {
+        status.textContent = 'Enter a barcode first.';
+        status.style.color = 'var(--warning)';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Looking up...';
+      status.textContent = '';
+
+      try {
+        const res = await fetch('/lookup-barcode?code=' + encodeURIComponent(code));
+        const data = await res.json();
+
+        if (data.name) {
+          document.getElementById('item_name').value = data.name;
+          status.textContent = 'Found: ' + data.name;
+          status.style.color = 'var(--primary)';
+        } else {
+          status.textContent = 'Product not found for this barcode.';
+          status.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        status.textContent = 'Lookup failed. Please enter name manually.';
+        status.style.color = 'var(--danger)';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Lookup Product';
+      }
+    }
+
+    async function scanPhoto() {
+      const fileInput = document.getElementById('scan_photo');
+      const status = document.getElementById('scan_status');
+      const btn = document.getElementById('scan_btn');
+
+      if (!fileInput.files.length) {
+        status.textContent = 'Please select an image first.';
+        status.style.color = 'var(--warning)';
+        status.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Scanning...';
+      status.textContent = 'Scanning image for expiry date...';
+      status.style.color = 'var(--text-muted)';
+      status.classList.remove('hidden');
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/scan-date', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.date && data.date !== 'not found') {
+          document.getElementById('expiry_date').value = data.date;
+          status.textContent = 'Date detected: ' + data.date;
+          status.style.color = 'var(--primary)';
+        } else {
+          status.textContent = data.error || 'Could not read date, please enter manually.';
+          status.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        status.textContent = 'Scan failed. Please try again or enter manually.';
+        status.style.color = 'var(--danger)';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Scan Photo';
+      }
+    }
+  </script>
+
+</body>
+</html>
