@@ -1126,11 +1126,16 @@
             body: formData,
           });
 
+          let data = {};
+          try {
+            data = await res.json();
+          } catch (_) {}
+
           if (!res.ok) {
-            throw new Error('Could not add product. Please try again.');
+            throw new Error(data.error || 'Could not add product. Please try again.');
           }
 
-          status.textContent = 'Product added successfully.';
+          status.textContent = data.message || 'Product added successfully.';
           status.style.color = 'var(--primary)';
           window.location.reload();
         } catch (err) {

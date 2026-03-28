@@ -57,7 +57,10 @@ async def save_to_convex(data: dict) -> dict:
             json={"path": "products:add", "args": data},
         )
         response.raise_for_status()
-        return response.json()
+        payload = response.json()
+        if payload.get("status") == "error":
+            raise RuntimeError(payload.get("errorMessage", "Unknown Convex mutation error"))
+        return payload
 
 
 async def get_all_products() -> list[dict]:
@@ -68,7 +71,10 @@ async def get_all_products() -> list[dict]:
             json={"path": "products:getAll", "args": {}},
         )
         response.raise_for_status()
-        return response.json()["value"]
+        payload = response.json()
+        if payload.get("status") == "error":
+            raise RuntimeError(payload.get("errorMessage", "Unknown Convex query error"))
+        return payload["value"]
 
 
 def get_status(expiry_date_str: str) -> tuple[int, str]:
@@ -153,8 +159,11 @@ async def add_product(
     }
     if barcode.strip():
         product_data["barcode"] = barcode.strip()
-    await save_to_convex(product_data)
-    return RedirectResponse(url="/", status_code=303)
+    try:
+        await save_to_convex(product_data)
+        return JSONResponse({"ok": True})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
 @app.get("/lookup-barcode")
