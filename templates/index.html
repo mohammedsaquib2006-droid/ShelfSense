@@ -905,7 +905,7 @@
     <div class="dash-card reveal">
       <div class="dash-card-header">Add Product</div>
       <div class="dash-card-body">
-        <form action="https://shelfsense-f158.onrender.com/add-product" method="post" class="form-grid">
+        <form id="add_product_form" class="form-grid">
           <div class="form-group">
             <label for="item_name">Item Name</label>
             <input type="text" id="item_name" name="item_name" required class="form-input" placeholder="e.g. Milk" />
@@ -961,6 +961,7 @@
             <button type="submit" class="btn-primary">Add Product</button>
           </div>
         </form>
+        <p id="add_product_status" class="scan-status hidden"></p>
       </div>
     </div>
 
@@ -1103,6 +1104,44 @@
 
     /* ══════════════════ ShelfSense Functions ══════════════════ */
     const API_BASE = 'https://shelfsense-f158.onrender.com';
+
+    const addProductForm = document.getElementById('add_product_form');
+    if (addProductForm) {
+      addProductForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const status = document.getElementById('add_product_status');
+        const submitBtn = addProductForm.querySelector('button[type="submit"]');
+        const formData = new FormData(addProductForm);
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+        status.textContent = 'Saving product to inventory...';
+        status.style.color = 'var(--text-muted)';
+        status.classList.remove('hidden');
+
+        try {
+          const res = await fetch(API_BASE + '/add-product', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!res.ok) {
+            throw new Error('Could not add product. Please try again.');
+          }
+
+          status.textContent = 'Product added successfully.';
+          status.style.color = 'var(--primary)';
+          window.location.reload();
+        } catch (err) {
+          status.textContent = err.message || 'Could not add product. Please try again.';
+          status.style.color = 'var(--danger)';
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Add Product';
+        }
+      });
+    }
 
     function openDonateModal(productName) {
       document.getElementById('donate_product_name').textContent = productName;
